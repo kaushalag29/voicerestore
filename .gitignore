@@ -4,6 +4,7 @@ test_output.wav
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
+model_cache/
 *.py[cod]
 *$py.class
 

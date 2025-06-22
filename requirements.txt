@@ -18,3 +18,5 @@ einops
 ninja
 tqdm
 pyyaml
+fastapi
+uvicorn

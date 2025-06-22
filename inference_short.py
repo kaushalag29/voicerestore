@@ -10,7 +10,14 @@ from BigVGAN.meldataset import get_mel_spectrogram
 from model import OptimizedAudioRestorationModel
 
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+if torch.cuda.is_available():
+    device = 'cuda'
+elif torch.backends.mps.is_available():
+    device = 'mps'
+else:
+    device = 'cpu'
+
+print(f"Using device: {device}")
 
 # If running on non-windows system, you can try using cuda kernel for faster processing `use_cuda_kernel=True`
 bigvgan_model = bigvgan.BigVGAN.from_pretrained('nvidia/bigvgan_v2_24khz_100band_256x', use_cuda_kernel=False).to(device)
@@ -38,14 +45,18 @@ def load_model(save_path):
 
 
 def restore_audio(model, input_path, output_path, steps=16, cfg_strength=0.5):  
-    audio = torchaudio.load(input_path)
+    waveform, _ = torchaudio.load(input_path)
 
-    audio = audio.mean(dim=0, keepdim=True) if audio.dim() > 1 else audio  # Convert to mono if stereo
+    waveform = waveform.mean(dim=0, keepdim=True) if waveform.dim() > 1 else waveform  # Convert to mono if stereo
     
     with torch.inference_mode():
-        with torch.autocast(device):
-            restored_wav = model(audio, steps=steps, cfg_strength=cfg_strength)
-            restored_wav = restored_wav.squeeze(0).float().cpu()  # Move to CPU after processing
+        if device == 'cuda':
+            with torch.autocast(device_type=device):
+                restored_wav = model(waveform.to(device), steps=steps, cfg_strength=cfg_strength)
+        else:
+            restored_wav = model(waveform.to(device), steps=steps, cfg_strength=cfg_strength)
+            
+        restored_wav = restored_wav.squeeze(0).float().cpu()  # Move to CPU after processing
     
     torchaudio.save(output_path, restored_wav, model.target_sample_rate)
 
