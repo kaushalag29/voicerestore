@@ -118,6 +118,13 @@ async def restore_audio_endpoint(request: RestoreRequest):
         raise HTTPException(status_code=500, detail=f"Error restoring audio: {str(e)}")
 
 
+@app.post("/shutdown")
+async def shutdown():
+    logger.info("Shutdown request received")
+    os._exit(0)
+    return {"status": "shutdown", "message": "Server shutting down"}
+
+
 if __name__ == "__main__":
     import uvicorn
     # The server will be started from srt_to_speech.py, but this allows direct execution for testing.
